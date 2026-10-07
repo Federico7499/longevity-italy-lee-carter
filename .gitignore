@@ -2,3 +2,6 @@
 .RData
 .Rproj.user/
 .DS_Store
+
+# Dati HMD: si scaricano da mortality.org, non si ripubblicano
+data/hmd/
