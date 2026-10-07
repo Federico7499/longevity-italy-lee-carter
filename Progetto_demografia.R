@@ -9,13 +9,6 @@
 # al posto del codice ripetuto.
 # =============================================================================
 
-getwd()
-list.files(pattern = "datiregionali")
-Q
-dir.create("data/raw", recursive = TRUE)
-f <- list.files(pattern = "datiregionali")
-file.rename(f, file.path("data/raw", f))
-list.files("data/raw")   # controllo: devono comparire i 51 file
 
 # ---- 0. Setup ----------------------------------------------------------------
 
@@ -26,7 +19,6 @@ invisible(lapply(pkgs, library, character.only = TRUE))
 
 # Lo script va eseguito dalla cartella principale del progetto
 # (consigliato: aprire il file .Rproj in RStudio, niente setwd()).
-DATA_DIR <- file.path("data", "raw")
 OUT_DIR  <- "output"
 FIG_DIR  <- file.path(OUT_DIR, "figures")
 dir.create(FIG_DIR, recursive = TRUE, showWarnings = FALSE)
@@ -44,9 +36,24 @@ COL_REGIONI <- c(Lombardia = "#C0392B", Lazio = "#E67E22", Sardegna = "#2471A3")
 
 # ---- 1. Lettura e pulizia dei dati -------------------------------------------
 
+# Cartella dei dati: prima data/raw, in alternativa la cartella principale
+trova_cartella_dati <- function(candidati = c(file.path("data", "raw"), ".")) {
+  for (d in candidati) {
+    if (length(list.files(d, pattern = "^datiregionalicompleti\\d{4}-2\\.csv$")) > 0) {
+      message("Dati letti da: ", normalizePath(d))
+      return(d)
+    }
+  }
+  stop("Nessun file 'datiregionalicompleti<anno>-2.csv' trovato.\n",
+       "Cartella di lavoro attuale: ", getwd(), "\n",
+       "Metti i CSV in data/raw/ dentro la cartella del progetto ",
+       "e apri il progetto dal file .Rproj.", call. = FALSE)
+}
+DATA_DIR <- trova_cartella_dati()
+
 leggi_anno <- function(anno) {
   file <- file.path(DATA_DIR, paste0("datiregionalicompleti", anno, "-2.csv"))
-  if (!file.exists(file)) stop("File mancante: ", file)
+  if (!file.exists(file)) stop("Manca il file dell'anno ", anno, ": ", file, call. = FALSE)
   df <- read.csv(file, sep = ",", stringsAsFactors = FALSE)
   # La colonna "Età" può essere letta come "Età" o "Et." a seconda del sistema
   names(df)[startsWith(names(df), "Et")] <- "eta"
@@ -55,13 +62,6 @@ leggi_anno <- function(anno) {
 }
 
 data_raw <- bind_rows(lapply(ANNI, leggi_anno))
-getwd()
-list.files(pattern = "datiregionali")
-Q
-dir.create("data/raw", recursive = TRUE)
-f <- list.files(pattern = "datiregionali")
-file.rename(f, file.path("data/raw", f))
-list.files("data/raw")   # controllo: devono comparire i 51 file
 
 data_reg <- data_raw %>%
   select(-any_of("Informazioni")) %>%
@@ -177,12 +177,19 @@ tab_par <- bind_rows(lapply(risultati, function(r) {
 }))
 
 tab_kt <- bind_rows(lapply(risultati, function(r) {
-  k <- r$prev$kt.f
+  k    <- r$prev$kt.f
+  kt   <- as.numeric(r$fit$kt)
+  kt_n <- kt[length(kt)]
+  m    <- as.numeric(k$mean)
+  # forecast() di demography restituisce k_t previsto relativo all'ultimo anno
+  # (ricentrato a 0): per il grafico lo riportiamo sulla scala del k_t stimato
+  sposta <- if (abs(m[1] - kt_n) > abs(m[1])) kt_n else 0
   bind_rows(
-    tibble(anno = r$fit$year, kt = as.numeric(r$fit$kt),
+    tibble(anno = r$fit$year, kt = kt,
            lo = NA_real_, hi = NA_real_, tipo = "stimato"),
-    tibble(anno = as.numeric(time(k$mean)), kt = as.numeric(k$mean),
-           lo = as.matrix(k$lower)[, 1], hi = as.matrix(k$upper)[, 1],
+    tibble(anno = as.numeric(time(k$mean)), kt = m + sposta,
+           lo = as.matrix(k$lower)[, 1] + sposta,
+           hi = as.matrix(k$upper)[, 1] + sposta,
            tipo = "previsto")
   ) %>% mutate(regione = r$regione, sesso = r$sesso)
 }))
@@ -271,8 +278,12 @@ salva(p_bx, "lc_bx")
 p_kt <- tab_kt %>%
   filter(sesso == "total") %>%
   ggplot(aes(anno, kt, colour = regione, fill = regione)) +
-  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.15, colour = NA) +
+  geom_ribbon(data = ~ filter(.x, tipo == "previsto"),
+              aes(ymin = lo, ymax = hi), alpha = 0.15, colour = NA) +
   geom_line(aes(linetype = tipo), linewidth = 0.8) +
+  scale_linetype_manual(values = c(stimato = "solid", previsto = "dashed"),
+                        labels = c(stimato = "estimated", previsto = "forecast"),
+                        breaks = c("stimato", "previsto")) +
   scale_colour_manual(values = COL_REGIONI) +
   scale_fill_manual(values = COL_REGIONI) +
   labs(title = expression(k[t] ~ "index: estimate and forecast"),
