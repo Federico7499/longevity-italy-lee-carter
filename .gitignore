@@ -5,3 +5,6 @@
 
 # Dati HMD: si scaricano da mortality.org, non si ripubblicano
 data/hmd/
+
+# Oggetti R intermedi (si rigenerano con gli script)
+*.rds

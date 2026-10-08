@@ -46,6 +46,23 @@ Five models fitted with `StMoMo` on Human Mortality Database data for Italy (dea
 
 ![Life expectancy at 65 by model](output/fase2/figures/e65_proiezioni.png)
 
+## Phase 2b: Lee-Carter and APC by region (ages 55–100, 2002–2024)
+
+The two models selected in phase 2 are fitted separately for each region and sex, using ISTAT data: population on 1 January by single age (reconstructed series 2002–2018, current series 2019–2025) and mortality rates from the regional life tables.
+
+| Life expectancy at 65 (Lee-Carter) | Lombardy | Lazio | Sardinia |
+|---|---|---|---|
+| Females, 2024 → 2050 | 23.0 → 25.3 | 22.5 → 24.9 | 22.9 → 25.1 |
+| Males, 2024 → 2050 | 20.2 → **23.9** (+3.7) | 19.8 → 22.9 (+3.1) | 19.6 → 22.2 (+2.6) |
+
+- **Out-of-sample errors are 4–8%** (fit 2002–2014, forecast 2015–2019), with no clear winner between Lee-Carter and APC at regional level.
+- **Lombardy leads and is projected to pull ahead**, especially for males: again, the most polluted region shows the fastest improvement.
+- **Caveat: the projected speed depends on the end points.** With a random walk with drift, the slope of *k_t* is set by its first and last values. The sharp fall for Lombardy males in 2023–2024 is likely a post-COVID rebound (frail individuals died earlier), which may inflate the projection. This also explains why excluding the COVID years barely changes Lombardy's male projection (−0.2 years, against about −1 year elsewhere).
+- **APC is not always the prudent choice**: for Italy it projects higher longevity than Lee-Carter, but for Sardinia it projects lower. A prudent longevity assumption should take the higher of the two models region by region.
+- **Data note:** deaths are reconstructed as ISTAT life-table rates × exposure, because observed deaths by single age and region are not readily available. Life-table rates are slightly smoothed at the oldest ages, so backtest errors may be somewhat understated.
+
+![Life expectancy at 65 by region](output/fase2b/figures/e65_regioni.png)
+
 ## What the project does
 
 1. Builds age-specific mortality rates and complete life tables from ISTAT data, for total population, females and males.
@@ -59,25 +76,30 @@ data/raw/                 ISTAT regional life tables, one CSV per year
 data/hmd/                 HMD Italy deaths and exposures (not included, see Data)
 Progetto_demografia.R     phase 1: ISTAT life tables → Lee-Carter by region
 Fase2_modelli_stocastici.R  phase 2: model comparison and backtesting (StMoMo)
+Fase2b_regioni.R          phase 2b: Lee-Carter and APC by region
+data/istat_pop/           ISTAT population on 1 January by single age, 2002–2025
 output/                   phase 1 tables and figures
 output/fase2/             phase 2 tables and figures
+output/fase2b/            phase 2b tables and figures
 ```
 
 ## How to run
 
-Open the project in RStudio from the `.Rproj` file and run `Progetto_demografia.R` (phase 1) or `Fase2_modelli_stocastici.R` (phase 2). Missing packages (`demography`, `StMoMo`, `tidyverse`, `ggprism`) are installed automatically.
+Open the project in RStudio from the `.Rproj` file and run the script of each phase: `Progetto_demografia.R`, `Fase2_modelli_stocastici.R`, `Fase2b_regioni.R`. Missing packages (`demography`, `StMoMo`, `tidyverse`, `ggprism`) are installed automatically.
 
 ## Data
 
 - **Phase 1:** ISTAT regional life tables, 1974–2024 (`datiregionalicompleti<year>-2.csv`). Ages 100 and over are grouped into an open-ended 100+ class.
 - **Phase 2:** Human Mortality Database, Italy, period `Deaths_1x1.txt` and `Exposures_1x1.txt`. HMD data are not redistributed here: download them from [mortality.org](https://www.mortality.org) (free registration) and save them in `data/hmd/`.
 
+- **Phase 2b:** ISTAT population on 1 January by sex and single age: reconstructed population 2002–2019 (`pop_ricostruita_<region>.csv`) and current series 2019–2025 (`pop_<region>_<year>.csv`), from demo.istat.it. The two series match exactly in 2019.
+
   *HMD. Human Mortality Database. Max Planck Institute for Demographic Research (Germany), University of California, Berkeley (USA), and French Institute for Demographic Studies (France). Available at www.mortality.org (data downloaded in October 2026).*
 
 ## Roadmap
 
 - [x] Compare stochastic mortality models (LC, RH, APC, CBD, M7) with out-of-sample backtesting (`StMoMo`), Italy
-- [ ] Apply the selected models to the three regions (ISTAT deaths and population, 2002–2024)
+- [x] Apply the selected models to the three regions (ISTAT population and life tables, 2002–2024)
 - [ ] Include air quality (PM10, PM2.5, NO₂) as a covariate in a Poisson GLM, at the provincial level
 - [ ] Price life annuities with projected cohort tables, by region and sex
 - [ ] Simulate longevity risk and compare the resulting capital with the Solvency II standard-formula shock
