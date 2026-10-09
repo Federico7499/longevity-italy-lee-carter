@@ -81,6 +81,27 @@ Single premium for a life annuity of **10,000 euro a year**, paid in advance fro
 
 ![Single premium by region](output/fase4/figures/premi_rendita.png)
 
+## Phase 5: longevity risk capital, internal model vs Solvency II standard formula
+
+Same annuity as phase 4. Capital = 99.5% quantile of the annuity value minus the best estimate, from 10,000 Lee-Carter simulations (random walk with drift for *k_t*), compared with the Solvency II standard formula shock (−20% mortality at all ages). Two choices are made explicit:
+
+- **Horizon**: *run-off* (uncertainty over the whole life of the contract) vs *one-year* (simulate 2025, re-estimate the trend with the new observation, revalue the annuity), which is the view the standard formula is calibrated on.
+- **COVID volatility**: the volatility of *k_t* estimated with and without the 2020–2021 jumps. COVID inflates it by 2.8× for Lombard men and 1.8× for Lombard women, against 1.0–1.35× elsewhere.
+
+| Capital as % of best estimate | Standard formula | One-year, excl. COVID | One-year, incl. COVID | Run-off, excl. COVID | Run-off, incl. COVID |
+|---|---|---|---|---|---|
+| Lombardy F / M | 4.6 / 5.6 | 4.6 / **3.2** | 7.8 / **8.8** | 12.2 / 8.2 | 19.6 / 19.8 |
+| Lazio F / M | 4.9 / 6.0 | 3.7 / 2.8 | 4.0 / 3.7 | 11.0 / 7.3 | 11.1 / 9.9 |
+| Sardinia F / M | 4.6 / 6.2 | 5.1 / 3.8 | 5.3 / 4.2 | 13.5 / 9.5 | 14.2 / 9.9 |
+
+- **On a comparable basis (one-year, excluding COVID), the standard formula is prudent for men** (internal capital about half of the standard formula) **and roughly adequate for women**. Sardinian women are the exception (5.1% vs 4.6%), driven by the noisier mortality of a smaller population.
+- **Treating COVID as ordinary volatility would almost triple the one-year capital for Lombard men** (3.2% → 8.8%), well above the standard formula. A pandemic shock is a mortality/catastrophe risk, not a longevity risk, and should be modelled separately.
+- **The horizon matters more than the model**: run-off capital is 2.5–3.5 times the one-year capital. Comparing a run-off internal model with the standard formula would be misleading.
+- A first version using `StMoMo` simulations (`Fase5_capitale_longevita.R`, 1,000 simulations, run-off with COVID volatility) gave internal capital up to 3.2× the standard formula; version 2 shows that this was driven by the horizon and by COVID, not by longevity trend risk.
+- **Limitations:** one-year re-estimation only updates the drift (not *a_x*, *b_x* or the volatility); a single cohort rather than a portfolio; population mortality, so no basis risk between the insured and the reference population.
+
+![Longevity risk capital](output/fase5b/figures/capitale_v2.png)
+
 ## What the project does
 
 1. Builds age-specific mortality rates and complete life tables from ISTAT data, for total population, females and males.
@@ -96,16 +117,19 @@ Progetto_demografia.R     phase 1: ISTAT life tables → Lee-Carter by region
 Fase2_modelli_stocastici.R  phase 2: model comparison and backtesting (StMoMo)
 Fase2b_regioni.R          phase 2b: Lee-Carter and APC by region
 Fase4_rendite.R           phase 4: life annuity pricing by region
+Fase5_capitale_longevita.R  phase 5 (v1): longevity capital with StMoMo simulations
+Fase5b_capitale_v2.R      phase 5 (v2): one-year vs run-off, with and without COVID volatility
 data/istat_pop/           ISTAT population on 1 January by single age, 2002–2025
 output/                   phase 1 tables and figures
 output/fase2/             phase 2 tables and figures
 output/fase2b/            phase 2b tables and figures
 output/fase4/             phase 4 tables and figures
+output/fase5/, output/fase5b/  phase 5 tables and figures
 ```
 
 ## How to run
 
-Open the project in RStudio from the `.Rproj` file and run the script of each phase: `Progetto_demografia.R`, `Fase2_modelli_stocastici.R`, `Fase2b_regioni.R`, `Fase4_rendite.R` (run phase 2b first: it saves the fitted models used by phase 4). Missing packages (`demography`, `StMoMo`, `tidyverse`, `ggprism`) are installed automatically.
+Open the project in RStudio from the `.Rproj` file and run the script of each phase: `Progetto_demografia.R`, `Fase2_modelli_stocastici.R`, `Fase2b_regioni.R`, `Fase4_rendite.R`, `Fase5b_capitale_v2.R` (run phase 2b first: it saves the fitted models used by phases 4 and 5). Missing packages (`demography`, `StMoMo`, `tidyverse`, `ggprism`) are installed automatically.
 
 ## Data
 
@@ -122,6 +146,6 @@ Open the project in RStudio from the `.Rproj` file and run the script of each ph
 - [x] Apply the selected models to the three regions (ISTAT population and life tables, 2002–2024)
 - [ ] Include air quality (PM10, PM2.5, NO₂) as a covariate in a Poisson GLM, at the provincial level
 - [x] Price life annuities with projected cohort tables, by region and sex
-- [ ] Simulate longevity risk and compare the resulting capital with the Solvency II standard-formula shock
+- [x] Simulate longevity risk and compare the resulting capital with the Solvency II standard-formula shock
 
 *Author: Federico Cerri, MSc in Statistical, Financial and Actuarial Sciences, University of Bologna*
