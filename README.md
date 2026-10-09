@@ -63,6 +63,24 @@ The two models selected in phase 2 are fitted separately for each region and sex
 
 ![Life expectancy at 65 by region](output/fase2b/figures/e65_regioni.png)
 
+## Phase 4: pricing a life annuity by region
+
+Single premium for a life annuity of **10,000 euro a year**, paid in advance from age 65, issued in 2025 (cohort born in 1960). Technical rate 2%, no expense loadings. The premium is computed with the **period table 2024** (today's mortality, no future improvement) and with the **projected cohort table** from phase 2b.
+
+| Single premium, Lee-Carter, 2% | Lombardy | Lazio | Sardinia |
+|---|---|---|---|
+| Females: period → cohort | 185,800 → 195,600 € | 182,300 → 192,500 € | 185,000 → 194,800 € |
+| Males: period → cohort | 167,000 → **180,800 €** | 163,800 → 175,100 € | 162,300 → 171,800 € |
+| Cost of ignoring improvements (F / M) | +5.2% / **+8.3%** | +5.6% / +6.9% | +5.3% / +5.8% |
+
+- **Ignoring future mortality improvements underprices the annuity by 5–8%**: up to about 13,800 euro per contract for a Lombard man.
+- **Region matters for men, much less for women.** A 65-year-old Lombard man costs 5.3% more than a Sardinian one (+9,000 euro); for women the three regions are within about 1.5%.
+- **Model risk is as large as regional risk.** For Lombard men, APC gives a premium of 188,300 euro, 4.2% above Lee-Carter. A prudent basis taking the higher of the two models per region selects APC for Lombardy (both sexes) and Lazio men.
+- **COVID years lower the premium by 0.7–3.6%** compared with fitting on 2002–2019. Lombard men are again the exception (−0.7% with Lee-Carter), because of the post-COVID rebound discussed in phase 2b.
+- **Limitations:** general population mortality, not annuitant mortality (annuitants live longer, so real premiums would be higher); flat technical rate; table closed at age 100; no expense loadings; no uncertainty on the projection (next phase).
+
+![Single premium by region](output/fase4/figures/premi_rendita.png)
+
 ## What the project does
 
 1. Builds age-specific mortality rates and complete life tables from ISTAT data, for total population, females and males.
@@ -77,15 +95,17 @@ data/hmd/                 HMD Italy deaths and exposures (not included, see Data
 Progetto_demografia.R     phase 1: ISTAT life tables → Lee-Carter by region
 Fase2_modelli_stocastici.R  phase 2: model comparison and backtesting (StMoMo)
 Fase2b_regioni.R          phase 2b: Lee-Carter and APC by region
+Fase4_rendite.R           phase 4: life annuity pricing by region
 data/istat_pop/           ISTAT population on 1 January by single age, 2002–2025
 output/                   phase 1 tables and figures
 output/fase2/             phase 2 tables and figures
 output/fase2b/            phase 2b tables and figures
+output/fase4/             phase 4 tables and figures
 ```
 
 ## How to run
 
-Open the project in RStudio from the `.Rproj` file and run the script of each phase: `Progetto_demografia.R`, `Fase2_modelli_stocastici.R`, `Fase2b_regioni.R`. Missing packages (`demography`, `StMoMo`, `tidyverse`, `ggprism`) are installed automatically.
+Open the project in RStudio from the `.Rproj` file and run the script of each phase: `Progetto_demografia.R`, `Fase2_modelli_stocastici.R`, `Fase2b_regioni.R`, `Fase4_rendite.R` (run phase 2b first: it saves the fitted models used by phase 4). Missing packages (`demography`, `StMoMo`, `tidyverse`, `ggprism`) are installed automatically.
 
 ## Data
 
@@ -101,7 +121,7 @@ Open the project in RStudio from the `.Rproj` file and run the script of each ph
 - [x] Compare stochastic mortality models (LC, RH, APC, CBD, M7) with out-of-sample backtesting (`StMoMo`), Italy
 - [x] Apply the selected models to the three regions (ISTAT population and life tables, 2002–2024)
 - [ ] Include air quality (PM10, PM2.5, NO₂) as a covariate in a Poisson GLM, at the provincial level
-- [ ] Price life annuities with projected cohort tables, by region and sex
+- [x] Price life annuities with projected cohort tables, by region and sex
 - [ ] Simulate longevity risk and compare the resulting capital with the Solvency II standard-formula shock
 
 *Author: Federico Cerri, MSc in Statistical, Financial and Actuarial Sciences, University of Bologna*
